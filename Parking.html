@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease;
+            color: white;
+        }
+        .overlay {
+            background: rgba(0, 0, 0, 0.7);
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 1200px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .parking-layout {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 20px;
+            margin: 30px 0;
+            align-items: flex-start;
+        }
+        .left-cells, .right-cells {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 20%;
+        }
+        .middle-section {
+            width: 50%;
+            padding: 15px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: left;
+        }
+        .middle-section h3 {
+            margin-top: 0;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        .cell {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            font-size: 14px;
+        }
+        .cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .available { background-color: #28a745; }
+        .available:hover { background-color: #218838; }
+        .occupied { background-color: #dc3545; }
+        .user-slot { border: 4px solid #00c4ff; }
+        form, .exit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 350px;
+            margin: 20px auto;
+        }
+        input, select, button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            transition: background 0.2s;
+        }
+        input:focus, select:focus { outline: 2px solid #00c4ff; background: #fff; }
+        button {
+            background-color: #00c4ff;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0099cc;
+            transform: translateY(-2px);
+        }
+        .hidden { display: none; }
+        .alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            background: #dc3545;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        .alert.success { background: #28a745; }
+        @keyframes slideIn { from { top: -50px; } to { top: 20px; } }
+        @media (max-width: 900px) {
+            .parking-layout { flex-direction: column; align-items: center; gap: 15px; }
+            .left-cells, .right-cells, .middle-section { width: 100%; }
+            .cell { width: 60px; height: 60px; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="container">
+            <!-- Login Form -->
+            <div id="login-section">
+                <h1>Parking System</h1>
+                <form id="login-form">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <input type="password" id="password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                    <p>New user? <a href="#" onclick="showRegister()" style="color: #00c4ff;">Register</a></p>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-section" class="hidden">
+                <h1>Register</h1>
+                <form id="register-form">
+                    <input type="text" id="reg-username" placeholder="Username" required>
+                    <input type="password" id="reg-password" placeholder="Password" required>
+                    <button type="submit">Register</button>
+                    <p>Already registered? <a href="#" onclick="showLogin()" style="color: #00c4ff;">Login</a></p>
+                </form>
+            </div>
+
+            <!-- Dashboard -->
+            <div id="dashboard-section" class="hidden">
+                <h1>Parking Dashboard</h1>
+                <div class="parking-layout">
+                    <div id="left-cells" class="left-cells"></div>
+                    <div id="middle-section" class="middle-section">
+                        <h3>Vehicle Details</h3>
+                        <div id="vehicle-details"></div>
+                        <h3>Parking Stats</h3>
+                        <div id="parking-stats"></div>
+                    </div>
+                    <div id="right-cells" class="right-cells"></div>
+                </div>
+                <form id="park-form" class="hidden">
+                    <select id="vehicle-type" required>
+                        <option value="">Vehicle Type</option>
+                        <option value="2-wheeler">2-Wheeler</option>
+                        <option value="4-wheeler">4-Wheeler</option>
+                    </select>
+                    <input type="text" id="vehicle-number" placeholder="Vehicle Number" required>
+                    <button type="submit">Park Vehicle</button>
+                </form>
+                <div id="exit-section" class="hidden">
+                    <button id="exit-btn">Exit Parking</button>
+                </div>
+            </div>
+
+            <!-- Exit Confirmation -->
+            <div id="exit-confirmation-section" class="hidden">
+                <h1>Thank You!</h1>
+                <p id="exit-details" style="font-size: 1.2em;"></p>
+                <button onclick="resetToLogin()">Back to Login</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LocalStorage helpers
+        function checkLocalStorage() {
+            try {
+                return typeof localStorage !== 'undefined' && localStorage !== null;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function safeSetItem(key, value) {
+            if (checkLocalStorage()) {
+                localStorage.setItem(key, JSON.stringify(value));
+            } else {
+                console.warn('LocalStorage not available');
+            }
+        }
+
+        function safeGetItem(key) {
+            if (checkLocalStorage()) {
+                return JSON.parse(localStorage.getItem(key)) || {};
+            }
+            return {};
+        }
+
+        // Simulated data storage
+        let users = safeGetItem('users');
+        let parkingData = safeGetItem('parkingData');
+        let currentUser = null;
+        const totalSlots = 12; // 6 left (A1-A6), 6 right (B1-B6)
+        let selectedSlot = null;
+
+        // Background images
+        const backgrounds = {
+            'login': 'url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c)',
+            'register': 'url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c)',
+            'dashboard': 'url(https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7)',
+            'exit-confirmation': 'url(https://images.unsplash.com/photo-1506521781263-d56b340f9e42)'
+        };
+
+        // Page switching
+        function setPage(page) {
+            document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+            const section = document.getElementById(`${page}-section`);
+            section.classList.remove('hidden');
+            document.body.style.backgroundImage = backgrounds[page];
+        }
+
+        function showRegister() { setPage('register'); }
+        function showLogin() { setPage('login'); }
+        function resetToLogin() {
+            currentUser = null;
+            selectedSlot = null;
+            setPage('login');
+        }
+
+        // Custom alert
+        function showAlert(message, isSuccess = false) {
+            const alert = document.createElement('div');
+            alert.className = `alert ${isSuccess ? 'success' : ''}`;
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+
+        // Registration
+        document.getElementById('register-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            if (users[username]) return showAlert('Username already exists!');
+            users[username] = { password, parked: null };
+            safeSetItem('users', users);
+            showAlert('Registration successful! Please login.', true);
+            showLogin();
+        });
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            if (users[username] && users[username].password === password) {
+                currentUser = username;
+                loadDashboard();
+            } else {
+                showAlert('Invalid credentials!');
+            }
+        });
+
+        // Load Dashboard
+        function loadDashboard() {
+            setPage('dashboard');
+            const leftCells = document.getElementById('left-cells');
+            const rightCells = document.getElementById('right-cells');
+            const vehicleDetails = document.getElementById('vehicle-details');
+            const parkingStats = document.getElementById('parking-stats');
+            leftCells.innerHTML = '';
+            rightCells.innerHTML = '';
+            vehicleDetails.innerHTML = '';
+            parkingStats.innerHTML = '';
+
+            const hasParked = users[currentUser].parked;
+            let availableSlots = totalSlots;
+            let occupiedSlots = 0;
+
+            // Left cells (A1-A6)
+            for (let i = 1; i <= 6; i++) {
+                const slotId = `A${i}`;
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.slot = slotId;
+                cell.textContent = slotId;
+                if (parkingData[slotId]) {
+                    cell.classList.add('occupied');
+                    if (parkingData[slotId].user === currentUser) cell.classList.add('user-slot');
+                    availableSlots--;
+                    occupiedSlots++;
+                } else {
+                    cell.classList.add('available');
+                    if (!hasParked) cell.addEventListener('click', () => selectSlot(slotId));
+                }
+                leftCells.appendChild(cell);
+            }
+
+            // Right cells (B1-B6)
+            for (let i = 1; i <= 6; i++) {
+                const slotId = `B${i}`;
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.slot = slotId;
+                cell.textContent = slotId;
+                if (parkingData[slotId]) {
+                    cell.classList.add('occupied');
+                    if (parkingData[slotId].user === currentUser) cell.classList.add('user-slot');
+                    availableSlots--;
+                    occupiedSlots++;
+                } else {
+                    cell.classList.add('available');
+                    if (!hasParked) cell.addEventListener('click', () => selectSlot(slotId));
+                }
+                rightCells.appendChild(cell);
+            }
+
+            // Vehicle details
+            if (Object.keys(parkingData).length === 0) {
+                vehicleDetails.innerHTML = '<p>No vehicles parked yet.</p>';
+            } else {
+                Object.entries(parkingData).forEach(([slot, { type, number, time }]) => {
+                    const detail = document.createElement('p');
+                    detail.innerHTML = `${slot}: ${type} (${number})<br>Parked: ${new Date(time).toLocaleTimeString()}`;
+                    vehicleDetails.appendChild(detail);
+                });
+            }
+
+            // Parking stats
+            parkingStats.innerHTML = `
+                <p>Total Slots: ${totalSlots}<br>
+                Available: ${availableSlots}<br>
+                Occupied: ${occupiedSlots}</p>
+            `;
+
+            document.getElementById('park-form').classList.toggle('hidden', !selectedSlot || hasParked);
+            document.getElementById('exit-section').classList.toggle('hidden', !hasParked);
+        }
+
+        // Slot selection
+        function selectSlot(slotId) {
+            if (parkingData[slotId]) return showAlert('This slot is already occupied!');
+            if (users[currentUser].parked) return showAlert('You already have a vehicle parked!');
+            selectedSlot = slotId;
+            const parkForm = document.getElementById('park-form');
+            parkForm.classList.remove('hidden');
+            loadDashboard();
+        }
+
+        // Park Vehicle
+        document.getElementById('park-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const type = document.getElementById('vehicle-type').value;
+            const number = document.getElementById('vehicle-number').value.trim();
+            
+            if (!type || !number) return showAlert('Please fill all fields!');
+            if (!selectedSlot) return showAlert('Please select a slot first!');
+
+            parkingData[selectedSlot] = { type, number, time: Date.now(), user: currentUser };
+            users[currentUser].parked = selectedSlot;
+            safeSetItem('parkingData', parkingData);
+            safeSetItem('users', users);
+            showAlert('Vehicle parked successfully!', true);
+            resetToLogin(); // Go back to login page
+        });
+
+        // Exit Vehicle
+        document.getElementById('exit-btn').addEventListener('click', () => {
+            const slot = users[currentUser].parked;
+            if (!slot) return;
+
+            const { type, number, time } = parkingData[slot];
+            const duration = Math.floor((Date.now() - time) / 60000);
+            delete parkingData[slot];
+            users[currentUser].parked = null;
+
+            safeSetItem('parkingData', parkingData);
+            safeSetItem('users', users);
+
+            setPage('exit-confirmation');
+            document.getElementById('exit-details').innerHTML = `
+                Slot: ${slot}<br>
+                Vehicle: ${type} (${number})<br>
+                Parked at: ${new Date(time).toLocaleString()}<br>
+                Duration: ${duration} minutes
+            `;
+        });
+
+        // Initial load
+        setPage('login');
+    </script>
+</body>
+</html>
